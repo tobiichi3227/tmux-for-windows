@@ -137,7 +137,7 @@ HRESULT CreatePseudoConsoleAndPipes(HPCON* phPC, HANDLE* phPipeIn, HANDLE* phPip
 }
 
 void __cdecl PTYCleanupThreadFunc(LPVOID pPty) {
-    PTY* pty = (PTY*)pPty;
+    PTY* pty = static_cast<PTY*>(pPty);
     WaitForSingleObject(pty->process.pi.hThread, INFINITE);
 
     printf("pty %d: cleanup\n", pty->sessionID);
@@ -160,7 +160,7 @@ void __cdecl PTYCleanupThreadFunc(LPVOID pPty) {
 }
 
 void __cdecl ClientCleanupThreadFunc(LPVOID pClient) {
-    Client* client = (Client*)pClient;
+    Client* client = static_cast<Client*>(pClient);
     WaitForSingleObject(client->cleanEvent, INFINITE);
     printf("client %d: cleanup\n", client->clientID);
     client->connectionClosed = true;
@@ -176,7 +176,6 @@ void __cdecl ClientCleanupThreadFunc(LPVOID pClient) {
 }
 
 PTY* CreatePTY() {
-    wchar_t szCommand[]{ L"powershell" };
     HRESULT hr{ S_OK };
     PTY* pty = new PTY();
 
@@ -201,7 +200,7 @@ PTY* CreatePTY() {
             PROCESS_TERMINATE;
 			hr = CreateProcess(
 				NULL,                           // No module name - use Command Line
-				szCommand,                      // Command Line
+				,                      // Command Line
 				NULL,                           // Process handle not inheritable
 				NULL,                           // Thread handle not inheritable
 				TRUE,                          // Inherit handles
@@ -256,7 +255,7 @@ void __cdecl AcceptThreadFunc(LPVOID pServerSocket) {
     int clientAddrSize = sizeof(clientAddr);
 
     while (!serverClosed) {
-        clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientAddrSize);
+        clientSocket = accept(serverSocket, static<struct sockaddr*>(&clientAddr), &clientAddrSize);
         if (serverClosed) break;
         if (clientSocket == INVALID_SOCKET) {
             std::cerr << "Accept failed with error: " << WSAGetLastError() << std::endl;
@@ -339,7 +338,7 @@ void StartEchoServer(const char* ipAddress = "127.0.0.1", int port = 12345) {
         return;
     }
 
-    if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+    if (bind(serverSocket, static_cast<struct sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR) {
         std::cerr << "Bind failed with error: " << WSAGetLastError() << std::endl;
         closesocket(serverSocket);
         WSACleanup();
@@ -368,7 +367,6 @@ void StartEchoServer(const char* ipAddress = "127.0.0.1", int port = 12345) {
         ResetEvent(processExitedEvent);
     }
 
-cleanup:
     std::cout << "Echo server closed" << std::endl;
     CloseHandle(acceptThread);
     CloseHandle(processExitedEvent);
@@ -377,7 +375,7 @@ cleanup:
 }
 
 void __cdecl WriteBufferThreadFunc(LPVOID pPty) {
-    PTY* pty = (PTY*)pPty;
+    PTY* pty = static_cast<PTY*>(pPty);
     const DWORD BUFF_SIZE{ 512 };
     char szBuffer[BUFF_SIZE]{};
 
