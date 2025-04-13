@@ -22,7 +22,6 @@ HANDLE exitEvent;
 
 void StartClient(const char* sessionId, const char* ipAddress = "127.0.0.1", int port = 12345) {
 
-    HRESULT hr{ E_UNEXPECTED };
     HANDLE hConsoleInput = { GetStdHandle(STD_INPUT_HANDLE) };
     HANDLE hConsoleOutput = { GetStdHandle(STD_OUTPUT_HANDLE) };
 
@@ -31,14 +30,9 @@ void StartClient(const char* sessionId, const char* ipAddress = "127.0.0.1", int
     GetConsoleMode(hConsoleInput, &consoleMode);
     consoleMode &= ~ENABLE_ECHO_INPUT;
     consoleMode &= ~ENABLE_PROCESSED_INPUT;
-    hr = SetConsoleMode(hConsoleInput, consoleMode | ENABLE_WINDOW_INPUT)
-        ? S_OK 
-        : GetLastError();
-
+    SetConsoleMode(hConsoleInput, consoleMode | ENABLE_WINDOW_INPUT);
     GetConsoleMode(hConsoleOutput, &consoleMode);
-    hr = SetConsoleMode(hConsoleOutput, consoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
-        ? S_OK
-        : GetLastError();
+    SetConsoleMode(hConsoleOutput, consoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
@@ -67,7 +61,7 @@ void StartClient(const char* sessionId, const char* ipAddress = "127.0.0.1", int
         return;
     }
 
-    if (connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+    if (connect(clientSocket, static_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR) {
         closesocket(clientSocket);
         WSACleanup();
         return;
@@ -127,7 +121,6 @@ void __cdecl OutputConsoleListener(LPVOID socket) {
     char szBuffer[BUFF_SIZE]{};
 
     wchar_t unicodeBuffer[3]{};
-    int unicodeBufferCnt = 0;
     wchar_t utf16_high_surrogate;
 
     DWORD dwBytesWritten{};
