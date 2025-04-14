@@ -396,20 +396,20 @@ void __cdecl WriteBufferThreadFunc(LPVOID pPty) {
             ReleaseSemaphore(client->needReadBufferCount, 1, NULL);
         }
 
-    } while (!pty->isExit && fRead && dwBytesRead >= 0);
+    } while (!pty->isExit && dwBytesRead >= 0);
 }
 
 void __cdecl ReadBufferThreadFunc(LPVOID pClient) {
-    Client* client = (Client*)pClient;
+    Client* client = static_cast<Client*>(pClient);
     PTY* pty = client->pty;
     int dwBytesWritten{};
     
-    // TODO: chunk send
-	int i = client->i;
+
+    int i = client->i;
 	for (; i + 512 < (int)pty->buffer.size(); i += 512) {
 		send(client->clientSocket, pty->buffer.data() + i, 512, 0);
 	}
-	send(client->clientSocket, pty->buffer.data() + i, (int)pty->buffer.size() - i, 0);
+    send(client->clientSocket, pty->buffer.data() + i, (int)pty->buffer.size() - i, 0);
     //send(client->clientSocket, pty->buffer.data(), (int)pty->buffer.size(), 0);
     client->i = (int)pty->buffer.size();
 
@@ -418,7 +418,7 @@ void __cdecl ReadBufferThreadFunc(LPVOID pClient) {
         if (client->connectionClosed) break;
         if (client->i == pty->buffer.size()) continue;
         // TODO: chunk send
-        int i = client->i;
+        i = client->i;
         for (; i + 512 < (int)pty->buffer.size(); i += 512) {
             send(client->clientSocket, pty->buffer.data() + i, 512, 0);
         }
@@ -430,7 +430,7 @@ void __cdecl ReadBufferThreadFunc(LPVOID pClient) {
 }
 
 void __cdecl WriteConsoleThreadFunc(LPVOID pClient) {
-    Client* client = (Client*)pClient;
+    Client* client = static_cast<Client*>(pClient);
     PTY* pty = client->pty;
 
     const DWORD BUFF_SIZE{ 512 };
